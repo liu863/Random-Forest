@@ -7,8 +7,7 @@ public class Table {
     private String[] col_name; //column names, the first line of the file
     private boolean[] col_type; //column types, the second line of the file, ture - string false - double
     private List<List<Object>> data; //file content
-    private boolean single_class; //whether this table continas only one category value
-    private boolean single_value; //whether each column contains single data value                                        
+    private boolean[] single_value; //whether a column contatins single value
     private List<Object> lastRow; //cache the last row of the table for modifying single_class and single_value
     
     public Table(int count, String[] name, boolean[] type) {
@@ -18,8 +17,8 @@ public class Table {
         System.arraycopy(name, 0, col_name, 0, col_count);
         System.arraycopy(type, 0, col_type, 0, col_count);
         data = new ArrayList<List<Object>>();
-        single_class = true;
-        single_value = true;
+        single_value = new boolean[col_count];
+        Arrays.fill(single_value, true);
         lastRow = null;
     }
     
@@ -63,20 +62,82 @@ public class Table {
             System.err.println("Invalid parameter: null pointer");
             return false;
         }
-        //compare category of new row with last row
-        if (single_class && lastRow != null) {
-            single_class = lastRow.get(col_count - 1).equals(row.get(col_count - 1));
-        }
-        //compare data fields of new row with last row
-        if (single_value && lastRow != null) {
-            for (int i = 0; single_value && i < col_count - 1; i++)
-                if (!lastRow.get(i).equals(row.get(i))) 
-                    single_value = false;
+        //modify single column value
+        for (int i = 0; lastRow != null && i < col_count; i++) {
+            if (!single_value[i]) continue;
+            single_value[i] = row.get(i).equals(lastRow.get(i));
         }
         data.add(row);
         row_count++;
         lastRow = row;
         return true;
+    }
+    
+    /**
+     * Calculate the entropy of a list of category, formula as follow:
+     * pi = number of a specified category / size of input
+     * H = sum(pi * log2(pi)) for pi of all distinct categories.
+     * @param list Array of category to be computed
+     * @return double The entropy of input categories.
+     */
+    private double calEntropy(List<Double> list) {
+        Map<Double, Integer> map = new HashMap<Double, Integer>();
+        for (Double d : list) {
+            if (map.containsKey(d)) 
+                map.put(d, map.get(d) + 1);
+            else 
+                map.put(d, 1);
+        }
+        double entropy = 0.0;
+        for (Double d : map.keySet()) {
+            double pi = (double)map.get(d) / list.size();
+            entropy += pi * Math.log(pi) / Math.log(2);
+        }
+        return -entropy;
+    }
+    
+    /**
+     * Split table into two new tables.
+     * @param ind Store the index of column that used to split the table
+     * @param val Store the value that used to split the table
+     * @return Table[] Size 2, left table at index 0 and right table at index 1.
+     */
+    public Table[] split(int[] ind, Object[] val) {
+        //find best split column and value
+        double min_entropy = Double.MAX_VALUE;
+        for (int i = 0; i < col_count - 1; i++) {
+            Set<Object> used = new HashSet<Object>();
+            for (int j = 0; j < row_count; j++) {
+                Object value = data.get(j).get(i);
+                if (!used.add(value)) continue;
+                List<Double> left = new ArrayList<Double>(), right = new ArrayList<Double>();
+                for (int k = 0; k < row_count; k++) {
+                    if (col_type[i]) {
+                        //String column
+                        if (data.get(k).get(i).equals(value))
+                            left.add((Double)data.get(k).get(col_count - 1));
+                        else
+                            right.add((Double)data.get(k).get(col_count - 1));
+                    }
+                    else {
+                        //double column
+                        if ((Double)data.get(k).get(i) < (Double)value)
+                            left.add((Double)data.get(k).get(col_count - 1));
+                        else
+                            right.add((Double)data.get(k).get(col_count - 1));
+                    }
+                }
+                double sum = calEntropy(left) + calEntropy(right);
+                if (sum < min_entropy && !left.isEmpty() && !right.isEmpty()) {
+                    //System.out.println("Entropy: " + sum + ", left size: " + left.size() + ", right size: " + right.size());
+                    min_entropy = sum;
+                    ind[0] = i;
+                    val[0] = value;
+                }
+            }
+        }
+        //System.out.println("Split by col: " + ind[0] + ", val: " + val[0]);
+        return split(ind[0], val[0]);
     }
     
     /**
@@ -125,19 +186,18 @@ public class Table {
     }
     
     /**
-     * Find the column with smallest entropy and return its index.
-     * @return int The index of column that has the smallest entropy,
+     * Find whether the table is splittable.
+     * @return int 0 if splittable,
      *             -1 if all rows have the same class,
      *             -2 if each column contains single value.
      */
-    public int minEntropyColumn() {
-        if (single_class) return -1;
-        if (single_value) return -2;
+    public int splittable() {
+        if (single_value[col_count - 1]) return -1;
+        for (int i = 0; i < col_count; i++) {
+            if (i == col_count - 1) return -2;
+            if (!single_value[i]) break;
+        }
         return 0;
-    }
-    
-    public Object findSplitValue(int col) {
-        return null;
     }
     
     public int getColCount() {
@@ -166,7 +226,12 @@ public class Table {
     
     public void printTable() {
         System.out.format("This table comtains %d rows, and %d columns%n", row_count, col_count);
-        System.out.println("Contians single class: " + single_class + ", single value: " + single_value);
+        System.out.println("Contains following single value column:");
+        for (int i = 0; i < col_count - 1; i++)
+            if (single_value[i]) System.out.print(i + " ");
+        System.out.println();
+        if (single_value[col_count - 1]) 
+            System.out.println("Contains single category");
         for (String n : col_name) {
             System.out.format("%-10s", n);
         }
@@ -187,5 +252,6 @@ public class Table {
             }
             System.out.println();
         }
+        System.out.println();
     }
 }

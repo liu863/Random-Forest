@@ -43,8 +43,9 @@ public class DecisionTree {
      * @return Node The root of the decision tree.
      */
     private Node buildTree(Table tb) {
+        //tb.printTable();
         Node node = new Node();
-        int col = tb.minEntropyColumn(), col_count = tb.getColCount();
+        int col = tb.splittable(), col_count = tb.getColCount();
         if (col == -1) {
             //single class
             node.value = tb.getRow(0).get(col_count - 1);
@@ -72,18 +73,16 @@ public class DecisionTree {
             }
             node.value = (Object)category;
         }
-        else if (col >= 0 && col < tb.getColCount()) {
-            //valid column
+        else {
+            //split
             node.isLeaf = false;
-            node.column = col;
-            node.value = tb.findSplitValue(col);
-            Table[] tbs = tb.split(col, node.value);
+            int[] ind = new int[1]; //store split column index as return value
+            Object[] val = new Object[1]; //store split value as return value
+            Table[] tbs = tb.split(ind, val);
+            node.column = ind[0];
+            node.value = val[0];
             node.left = buildTree(tbs[0]);
             node.right = buildTree(tbs[1]);
-        }
-        else {
-            System.err.format("Invalid return value from tb.minEntropyColumn(), error node: %d%n", err_count);
-            node.err_index = err_count++;
         }
         return node;
     }
