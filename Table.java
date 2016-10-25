@@ -62,6 +62,22 @@ public class Table {
             System.err.println("Invalid parameter: null pointer");
             return false;
         }
+        //check size
+        if (row.size() != col_count) {
+            System.err.println("Invalid parameter: wrong length");
+            return false;
+        }
+        //check data type
+        for (int i = 0; i < row.size(); i++) {
+            if (col_type[i] && !(row.get(i) instanceof String)) {
+                System.err.println("Data type conflict, expected String");
+                return false;
+            }
+            if (!col_type[i] && !(row.get(i) instanceof Double)) {
+                System.err.println("Data type conflict, expected Double");
+                return false;
+            }
+        }
         //modify single column value
         for (int i = 0; lastRow != null && i < col_count; i++) {
             if (!single_value[i]) continue;
@@ -129,6 +145,7 @@ public class Table {
                 }
                 double sum = calEntropy(left) + calEntropy(right);
                 if (sum < min_entropy && !left.isEmpty() && !right.isEmpty()) {
+                    //no empty sub-table is allowed since empty sub-tree will cause crash
                     //System.out.println("Entropy: " + sum + ", left size: " + left.size() + ", right size: " + right.size());
                     min_entropy = sum;
                     ind[0] = i;
@@ -222,6 +239,20 @@ public class Table {
     
     public List<Object> getRow(int line) {
         return new ArrayList<Object>(data.get(line));
+    }
+    
+    public void printRow(int line) {
+        if (line < 0 || line >= row_count) {
+            System.err.println("Invalid line index");
+            return;
+        }
+        List<Object> row = data.get(line);
+        for (int i = 0; i < col_count; i++) {
+            System.out.print(row.get(i));
+            if (i < col_count - 1) 
+                System.out.print(' ');
+        }
+        System.out.println();
     }
     
     public void printTable() {

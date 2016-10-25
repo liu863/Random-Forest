@@ -48,12 +48,15 @@ public class Reader {
             while ((row = br.readLine()) != null) {
                 if (!tb.addRow(row)) {
                     System.err.println("Failed to add row " + count);
+                    System.err.println(row);
+                    System.out.println();
                 }
                 else {
                     //System.out.println("Row " + count + " added");
                 }
                 count++;
             }
+            br.close();
         } catch (IOException e) {
             System.err.println(e.getMessage());
         }

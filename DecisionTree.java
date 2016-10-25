@@ -43,6 +43,7 @@ public class DecisionTree {
      * @return Node The root of the decision tree.
      */
     private Node buildTree(Table tb) {
+        //System.out.println("Start building a node");
         //tb.printTable();
         Node node = new Node();
         int col = tb.splittable(), col_count = tb.getColCount();
@@ -84,6 +85,7 @@ public class DecisionTree {
             node.left = buildTree(tbs[0]);
             node.right = buildTree(tbs[1]);
         }
+        //System.out.format("Finished builder a %s node%n", node.isLeaf ? "leaf" : "root");
         return node;
     }
     
@@ -161,7 +163,7 @@ public class DecisionTree {
             sb.append(node.value);
         }
         System.out.println(sb.toString());
-        printNode(indent + 4, node.left);
-        printNode(indent + 4, node.right);
+        printNode(indent + 0, node.left);
+        printNode(indent + 0, node.right);
     }
 }
