@@ -6,11 +6,51 @@ public class InputModifier {
             System.err.println("No source file");
             System.exit(1);
         }
-        //spaceTrimming(args[0]);
-        categoryAssign(args[0]);
+        InputModifier im = new InputModifier();
+        //im.spaceTrimming(args[0]);
+        im.categoryAssign(args[0]);
     }
     
-    private static void categoryAssign(String file) {
+    class Tuple {
+        int open, high, low, close, volumn;
+        Tuple(int open, int high, int low, int close, int volumn) {
+            this.open = open;
+            this.high = high;
+            this.low = low;
+            this.close = close;
+            this.volumn = volumn;
+        }
+    }
+    
+    private void addFields(String file) {
+        String fileName = file.substring(0, file.length() - 4);
+        File inFile = new File(file);
+        File outFile = new File(fileName + "modified.txt");
+        if (!outFile.exists()) {
+            try{
+                outFile.createNewFile();
+            } catch (IOException e) {
+                System.err.println(e.getMessage());
+            }
+        }
+        
+        BufferedReader br;
+        BufferedWriter bw;
+        try {
+            System.out.println("Start reading");
+            br = new BufferedReader(new FileReader(inFile));
+            bw = new BufferedWriter(new FileWriter(outFile.getAbsoluteFile()));
+            List<Tuple> list = new ArrayList<>();
+            String str;
+            while ((str = br.readLine()) != null) {
+                
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private void categoryAssign(String file) {
         String fileName = file.substring(0, file.length() - 4);
         File inFile = new File(file);
         File outFile = new File(fileName + "_category.txt");
@@ -73,7 +113,7 @@ public class InputModifier {
         }
     }
     
-    private static void spaceTrimming(String file) {
+    private void spaceTrimming(String file) {
         String fileName = file.substring(0, file.length() - 4);
         File inFile = new File(file);
         File outFile = new File(fileName + "_space.txt");
